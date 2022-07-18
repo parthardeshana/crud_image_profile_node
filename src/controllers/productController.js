@@ -63,15 +63,17 @@ exports.post = async (req, res) => {
 //update language by id 
 exports.update = async (req, res) => {
     let fileStr = req.body.profile_base64;
-    const uploadedResponse = await cloudinary.uploader
-        .upload(fileStr, {
-            upload_preset: "crud_node_profile"
-        })
-
+    let uploadedResponse = {};
+    if (fileStr) {
+        uploadedResponse = await cloudinary.uploader
+            .upload(fileStr, {
+                upload_preset: "crud_node_profile"
+            })
+    }
     let newData = {
         name: req.body.name,
         price: req.body.price,
-        profile_image: uploadedResponse?.url
+        profile_image: fileStr ? uploadedResponse?.url : req.body.profile_image
     }
 
     try {
