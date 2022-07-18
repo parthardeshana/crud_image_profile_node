@@ -1,7 +1,6 @@
 let profileimage = null;
 let dir = null;
 if (/^data:([A-Za-z-+/]+);base64,(.+)$/.test(profileImage)) {
-    console.log("After image");
     var matches = result.profileImage.match(
         /^data:([A-Za-z-+/]+);base64,(.+)$/
     ),
