@@ -1,14 +1,22 @@
 
 const Product = require('../models/product')
-
-var fs = require('fs-extra');
-const mime = require('mime');
+const { cloudinary } = require('../utils/cloudinary');
 
 //get all Product 
 exports.get = async (req, res) => {
     try {
         const lan = await Product.find();
         res.status(200).json({ success: true, Message: "Product Fetched Successfully", data: lan })
+    } catch (error) {
+        res.send("Error" + error)
+    }
+}
+
+//get one Product by id 
+exports.getOne = async (req, res) => {
+    try {
+        const lan = await Product.findById(req.params.id);
+        res.status(200).json({ success: true, Message: "selected Product fetch Successfully", data: lan })
     } catch (error) {
         res.send("Error" + error)
     }
@@ -28,51 +36,53 @@ exports.delete = async (req, res) => {
 exports.post = async (req, res) => {
     const product__ = await Product.find({ name: req.body.name });
     if (product__.length === 0) {
-        // image upload Starts  
-        let profileImage = req.body.profile_base64;
-        let dir = null;
-        let baseURL = __dirname;
-        let profileimage_name = "";
-        if (/^data:([A-Za-z-+/]+);base64,(.+)$/.test(profileImage)) {
-            var matches = profileImage.match(
-                /^data:([A-Za-z-+/]+);base64,(.+)$/
-            ),
-                response = {};
-            if (matches.length !== 3) {
-                return new Error("Invalid input string");
-            }
-            response.type = matches[1];
-            response.data = new Buffer.from(matches[2], "base64");
-            let decodedImg = response;
-            let imageBuffer = decodedImg.data;
-            var val = Math.floor(1000 + Math.random() * 9000);
-            let type = decodedImg.type;
-            let extension = mime.getExtension(type);
-            let imageName = "profile" + "-" + Date.now() + "-" + val;
-            let imageType = "." + extension;
-            profileimage_name = imageName + imageType;
-            dir = `${baseURL}/../public/profiles`;
+        let fileStr = req.body.profile_base64;
 
-            await fs.ensureDir(dir, (err) => {
-                fs.writeFileSync(dir + "/" + profileimage_name, imageBuffer, "utf8");
-                console.log("err", err); // => null
-            });
+        const uploadedResponse = await cloudinary.uploader
+            .upload(fileStr, {
+                upload_preset: "crud_node_profile"
+            })
 
-        }
-
-        //create new product 
+        //create new product
         const product = new Product({
             name: req.body.name,
             price: req.body.price,
-            profile_image: profileimage_name
+            profile_image: uploadedResponse?.url
         })
         try {
-            const lang = await product.save();
-            res.status(200).json({ success: true, Message: "Product Added Successfully", data: lang })
+            const productt = await product.save();
+            res.status(200).json({ success: true, Message: "Product Added Successfully", data: productt })
         } catch (error) {
             res.send("Error" + error)
         }
     } else {
         res.status(200).json({ success: false, Message: "Product Duplicate entity" })
+    }
+}
+
+//update language by id 
+exports.update = async (req, res) => {
+    let fileStr = req.body.profile_base64;
+    const uploadedResponse = await cloudinary.uploader
+        .upload(fileStr, {
+            upload_preset: "crud_node_profile"
+        })
+
+    let newData = {
+        name: req.body.name,
+        price: req.body.price,
+        profile_image: uploadedResponse?.url
+    }
+
+    try {
+        Product.findByIdAndUpdate({ _id: req.params.id }, newData, (err, doc) => {
+            if (err) {
+                console.log("err" + err);
+            } else {
+                res.status(200).json({ success: true, Message: "Language Updated Successfully", data: req.body })
+            }
+        });
+    } catch (error) {
+        res.send("Error" + error)
     }
 }
